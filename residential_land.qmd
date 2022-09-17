@@ -17,7 +17,7 @@ The ACT government publishes a file which includes all blocks in the territory. 
 ```{r}
 #| cache: true
 #| message: false
-blocks_raw <- st_read('ACTGOV_BLOCK.geojson')
+blocks_raw <- st_read('ACTGOV_BLOCK.geojson',quiet=TRUE)
 blocks <- blocks_raw |>
   janitor::clean_names() |>
   filter(current_lifecycle_stage %in% c('APPROVED','REGISTERED','OCCUPIED')) |>
@@ -30,11 +30,11 @@ With this data in hand, we can sum up all land contained in blocks contained in 
 #| message: false
 #| warning: false
 rz_blocks <- blocks |>
-  filter(str_detect(land_use_policy_zones,'^RZ[1-5]:')) #|> filter(!str_detect(land_use_policy_zones,';'))  #this filters out all blocks listed as being in more than one zone (these are not large areas, I'm not sure exactly what they are)
+  filter(str_detect(land_use_policy_zones,'^RZ[1-5]:')) |> filter(!str_detect(land_use_policy_zones,';'))  #this filters out all blocks listed as being in more than one zone (these are not large areas, I'm not sure exactly what they are)
 total_areas <- rz_blocks |> 
   summarise(total_area = sum(area)) |>
   mutate(total_area = units::set_units(total_area,'hectare'))
-total_areas
+total_areas |> as_tibble()
 ```
 
 I have excluded blocks with more than one zone listed (I'm not sure what's going on in those cases).
