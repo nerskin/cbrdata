@@ -1,0 +1,56 @@
+---
+title: "Residential Land in the ACT: How much is there?"
+toc-title: Table of contents
+---
+
+::: cell
+``` {.r .cell-code}
+library(tidyverse)
+library(sf)
+sf_use_s2(FALSE)
+```
+:::
+
+The ACT government publishes a file which includes all blocks in the
+territory. The (somewhat limited) documentation for it is
+[here](https://www.data.act.gov.au/dataset/ACTGOV-BLOCK/h78d-hg25).
+
+::: {.cell hash="residential_land_cache/markdown/unnamed-chunk-2_6f083bdbc24f8829a2a25ed19e50c662"}
+``` {.r .cell-code}
+blocks_raw <- st_read('ACTGOV_BLOCK.geojson',quiet=TRUE)
+blocks <- blocks_raw |>
+  janitor::clean_names() |>
+  filter(current_lifecycle_stage %in% c('APPROVED','REGISTERED','OCCUPIED')) |>
+  mutate(area = st_area(geometry)) 
+```
+:::
+
+With this data in hand, we can sum up all land contained in blocks
+contained in zones RZ1-RZ5:
+
+::: cell
+``` {.r .cell-code}
+rz_blocks <- blocks |>
+  filter(str_detect(land_use_policy_zones,'^RZ[1-5]:')) |> filter(!str_detect(land_use_policy_zones,';'))  #this filters out all blocks listed as being in more than one zone (these are not large areas, I'm not sure exactly what they are)
+total_areas <- rz_blocks |> 
+  summarise(total_area = sum(area)) |>
+  mutate(total_area = units::set_units(total_area,'hectare'))
+total_areas |> as_tibble()
+```
+
+::: {.cell-output .cell-output-stdout}
+    # A tibble: 1 × 2
+      total_area                                                            geometry
+       [hectare]                                                  <MULTIPOLYGON [°]>
+    1     10373. (((148.9936 -35.23757, 148.9951 -35.2373, 148.9962 -35.23717, 148.…
+:::
+:::
+
+I have excluded blocks with more than one zone listed (I'm not sure
+what's going on in those cases).
+
+To fully answer the question of how much residential land there is in
+the ACT, we'd have to account for CZ zones (although land used for
+residential purposes on CZ\* land would be trivial compared to
+residential RZ land), and define exactly what is meant by "residential
+land".
